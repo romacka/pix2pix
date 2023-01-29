@@ -5,14 +5,11 @@ import torch
 from albumentations.pytorch import ToTensorV2
 import numpy as np
 from pix2pix import init_gen
-import logging
 from tools import get_image, resize_with_pad
+import os
 
 
-
-logging.basicConfig(level=logging.DEBUG)
-
-bot = telebot.TeleBot('5853232983:AAFYmhkJDd0L5IEIB0e_UbMO0KjPoKzmLuE')
+bot = telebot.TeleBot('YOUR TOKEN')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 transform = A.Compose(
     [A.Resize(256, 256), A.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], max_pixel_value=255.0, ), ToTensorV2()])
@@ -31,8 +28,9 @@ def text(m):
 
 @bot.message_handler(content_types=['photo'])
 def answer_to_photo(message):
+    bot.send_message(message.chat.id, 'Начали старательно раскрашивать ваше изображение')
     raw = message.photo[-1].file_id
-    name = 'users_image/' + raw + ".jpg"
+    name = raw + ".jpg"
     file_info = bot.get_file(raw)
     downloaded_file = bot.download_file(file_info.file_path)
     with open(name, 'wb') as new_file:
@@ -43,6 +41,10 @@ def answer_to_photo(message):
     painted_numpy = get_image(img, gen)
     painted_img = Image.fromarray(np.uint8(painted_numpy * 255))
     bot.send_photo(message.chat.id, painted_img)
+    os.remove(name)
 
-
-bot.polling(none_stop=True, interval=0)
+while True:
+    try:
+        bot.polling(none_stop=True, interval=0)
+    except:
+        pass
